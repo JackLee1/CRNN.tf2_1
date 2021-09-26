@@ -31,7 +31,6 @@ def vgg_style(x):
     x = layers.Conv2D(512, 3, padding='same', use_bias=False, name='conv5')(x)
     x = layers.BatchNormalization(name='bn5')(x)
     x = layers.Activation('relu', name='relu5')(x)
-    x = layers.Conv2D(512, 3, padding='same', activation='relu', name='conv6')(x)
     x = layers.MaxPool2D(pool_size=2, strides=(2, 1), padding='same', name='pool6')(x)
 
     x = layers.Conv2D(512, 3, use_bias=False, name='conv7')(x)
