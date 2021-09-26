@@ -60,7 +60,7 @@ with strategy.scope():
     model.compile(optimizer=opt, loss=[[CTCLoss()],[LossBox()]], metrics={
         "ctc_logits":SequenceAccuracy()
     })
-    model.save(os.path.join(args.savedir, 'weights', 'structure.h5'),include_optimizer=False)
+    model.save(os.path.join(args.save_dir, 'weights', 'structure.h5'),include_optimizer=False)
 
 # Use validation accuracy to make sure load the right model
 if args.weight:
