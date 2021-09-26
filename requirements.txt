@@ -1,2 +1,4 @@
 pyyaml
 tensorflow >= 2.3
+tensorflow_addons
+imgaug == 0.4.0

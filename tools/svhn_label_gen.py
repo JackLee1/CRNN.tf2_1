@@ -24,14 +24,23 @@ class DigitStructWrapper:
 
     def get_name(self, n):
         """Return the name of the n(th) digit struct"""
-        return ''.join([chr(c[0]) for c in self.inf[self.digitStructName[n][0]].value])
+        if h5py.__version__ <= '2.9.0':
+          return ''.join([chr(c[0]) for c in self.inf[self.digitStructName[n][0]].value])
+        else:
+          return ''.join([chr(c[0]) for c in self.inf[self.digitStructName[n][0]]])
 
     def get_attribute(self, attr):
         """Helper function for dealing with one vs. multiple bounding boxes"""
-        if (len(attr) > 1):
-            attr = [self.inf[attr.value[j].item()].value[0][0] for j in range(len(attr))]
+        if h5py.__version__ <= '2.9.0':
+          if (len(attr) > 1):
+              attr = [self.inf[attr.value[j].item()].value[0][0] for j in range(len(attr))]
+          else:
+              attr = [attr.value[0][0]]
         else:
-            attr = [attr.value[0][0]]
+          if (len(attr) > 1):
+              attr = [self.inf[attr[j].item()][0][0] for j in range(len(attr))]
+          else:
+              attr = [attr[0][0]]
         return attr
 
     def get_bbox(self, n):
@@ -82,7 +91,7 @@ f2=open(f'{rootdir}/annotation_box.txt','w')
 for i in tqdm(range(len(d.digitStructName))):
     single_data=d.get_item(i)
     # Image Shape
-    img_shape=Image.open(os.path.join(prefix,single_data['name'])).size
+    img_shape=Image.open(os.path.join(rootdir,single_data['name'])).size
     w,h=img_shape
     half_w=w/2
     half_h=h/2
