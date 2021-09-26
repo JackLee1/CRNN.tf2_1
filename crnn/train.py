@@ -7,7 +7,6 @@ from pathlib import Path
 
 import tensorflow as tf
 import yaml
-from tensorflow import keras
 
 from dataset_factory import DatasetBuilder
 from losses import CTCLoss, LossBox
@@ -56,7 +55,7 @@ with strategy.scope():
                         weight=args.weight,
                         img_shape=config['dataset_builder']['img_shape'])
     lr=config['lr_schedule']['initial_learning_rate']
-    opt=keras.optimizers.Adam(lr)
+    opt=tf.keras.optimizers.Adam(lr)
     model.compile(optimizer=opt, loss=[[CTCLoss()],[LossBox()]], metrics={
         "ctc_logits":SequenceAccuracy()
     })
@@ -71,11 +70,11 @@ best_model_path = f'{args.save_dir}/weights/{best_model_prefix}.h5'
 model_prefix = '{epoch}_{val_loss:.4f}_{val_ctc_logits_sequence_accuracy:.4f}' if args.point4 else '{epoch}_{val_loss:.4f}_{val_sequence_accuracy:.4f}'
 model_path = f'{args.save_dir}/weights/{model_prefix}.h5'
 callbacks = [
-    keras.callbacks.ModelCheckpoint(best_model_path, save_weights_only=True, save_best_only=True),
-    keras.callbacks.ModelCheckpoint(model_path, save_weights_only=True, period=10),
-    keras.callbacks.TensorBoard(log_dir=f'{args.save_dir}/logs', **config['tensorboard']),
+    tf.keras.callbacks.ModelCheckpoint(best_model_path, save_weights_only=True, save_best_only=True),
+    tf.keras.callbacks.ModelCheckpoint(model_path, save_weights_only=True, period=10),
+    tf.keras.callbacks.TensorBoard(log_dir=f'{args.save_dir}/logs', **config['tensorboard']),
     ImageCallback(f'{args.save_dir}/images/', train_ds, stn_model, require_coords=args.point4),
-    keras.callbacks.ReduceLROnPlateau(monitor='val_loss', factor=0.318, patience=15, min_lr=1e-8, verbose=1),
-    keras.callbacks.EarlyStopping(monitor='val_loss', patience=51),
+    tf.keras.callbacks.ReduceLROnPlateau(monitor='val_loss', factor=0.318, patience=15, min_lr=1e-8, verbose=1),
+    tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=51),
 ]
 model.fit(train_ds, epochs=config['epochs'], callbacks=callbacks, validation_data=val_ds)

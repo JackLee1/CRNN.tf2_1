@@ -64,7 +64,7 @@ dataset_builder = DatasetBuilder(**config['dataset_builder'])
 
 model_old = tf.keras.models.load_model(args.structure, compile=False, custom_objects={'BilinearInterpolation': BilinearInterpolation})
 if args.weight: model_old.load_weights(args.weight)
-model_old.summary()
+
 input_tensor=model_old.input
 output_tensor1=model_old.get_layer('ctc_logits').output
 output_tensor2=model_old.get_layer('bilinear_interpolation').output

@@ -4,7 +4,7 @@ import tensorflow as tf
 import yaml
 
 from dataset_factory import DatasetBuilder
-from losses import CTCLoss
+from losses import CTCLoss, LossBox
 from metrics import SequenceAccuracy, EditDistance
 from models import build_model
 from layers.stn import BilinearInterpolation
@@ -25,10 +25,24 @@ ds = dataset_builder(config['ann_paths'], config['batch_size'], False)
 model = tf.keras.models.load_model(args.structure, custom_objects={
     'BilinearInterpolation': BilinearInterpolation
 }, compile=False)
+model.load_weights(args.weight)
+
+inputs=model.layers[0].input
+if args.point4:
+    outputs1=model.get_layer('ctc_logits').output
+    outputs2=model.get_layer('stn').output
+    model = tf.keras.Model(inputs, [outputs1, outputs2])
+else:
+    outputs1=model.get_layer('ctc_logits').output
+    model = tf.keras.Model(inputs, outputs1)
+model.summary()
 
 print(model.output_names)
-if isinstance(model.output_names, list) and len(model.output_names) > 1:
-    loss_dict={ model.output_names[0]: [CTCLoss()] }
+if args.point4:
+    loss_dict={ 
+        model.output_names[0]: [CTCLoss()],
+        model.output_names[1]: [LossBox()] 
+    }
     metrics_dict={ model.output_names[0]: [SequenceAccuracy(), EditDistance()] }
 else:
     loss_dict=[CTCLoss()]
