@@ -61,7 +61,7 @@ with strategy.scope():
         "ctc_logits":SequenceAccuracy()
     })
     model.save(os.path.join(args.save_dir, 'weights', 'structure.h5'),include_optimizer=False)
-
+    model.summary()
 # Use validation accuracy to make sure load the right model
 if args.weight:
     model.evaludate(val_ds)

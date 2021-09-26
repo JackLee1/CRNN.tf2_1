@@ -66,8 +66,8 @@ class ImageCallback(keras.callbacks.Callback):
                 img = images[ii].copy()
                 for iii in range(n_points):
                     if self.require_coords: 
-                        images[ii] = cv2.circle(img, gcoords[ii,2*iii:2*(iii+1)], 3, (255, 0, 0), -1)
-                    images[ii] = cv2.circle(img, pcoords[ii,2*iii:2*(iii+1)], 3, (0, 0, 255), -1)
+                        images[ii] = cv2.circle(img, tuple(gcoords[ii,2*iii:2*(iii+1)]), 3, (255, 0, 0), -1)
+                    images[ii] = cv2.circle(img, tuple(pcoords[ii,2*iii:2*(iii+1)]), 3, (0, 0, 255), -1)
                     
             images = np.vstack(images)
             # process stn_result
