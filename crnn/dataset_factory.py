@@ -5,6 +5,11 @@ import imgaug as ia
 import tensorflow_addons as tfa
 import tensorflow as tf
 import numpy as np
+import argparse
+import yaml
+import shutil
+import cv2
+from pathlib import Path
 
 try:
     AUTOTUNE = tf.data.AUTOTUNE
@@ -82,7 +87,8 @@ class DatasetBuilder:
             img_width = tf.cast(img_width, tf.int32)
         else:
             img_width = self.img_shape[1]
-        img = tf.image.resize(img, (self.img_shape[0], img_width)) / 255.0
+        img = tf.image.resize(img, (self.img_shape[0], img_width)) # / 255.0
+        img = tf.cast(img, 'uint8')
         return img, label, coord
 
     @tf.function
@@ -150,23 +156,30 @@ class DatasetBuilder:
                     scale={"x": (0.8, 1.3), "y": (0.6, 1.2)},
                     translate_percent={"x": (-0.15, 0.15), "y": (-0.05, 0.05)},
                     shear={"x": (-15, 15), "y": (-5, 5)},
-                    rotate=(10,-10)#(-15,15)
+                    rotate=(5,-5)#(-15,15)
                 ),    
             ),
             iaa.Sometimes(p, 
-                iaa.CoarseDropout(p=(0.05, 0.15), size_percent=0.7),
+                iaa.OneOf([
+                    iaa.CoarseDropout(p=(0.05, 0.15), size_percent=0.7),
+                    iaa.SaltAndPepper(p=0.04),
+                ])
             ),
             iaa.SomeOf((0, 2), [
-                # iaa.ChannelShuffle(0.35),
-                # iaa.SaltAndPepper(p=0.05),
+                iaa.ChannelShuffle(1.0),
                 # iaa.AdditiveGaussianNoise(scale=0.05*255),
                 iaa.GammaContrast(gamma=(0.5,1.4)),
-                iaa.Multiply((0.8, 1.4))
-                # iaa.pillike.EnhanceColor(factor=(0.0, 2.0))
+                iaa.Multiply((0.7, 1.2)),
+                iaa.pillike.EnhanceColor(factor=(0.5, 2.0))
             ])
         ], random_order=True)
         return seq
 
+    @tf.function
+    def dtype_transform(self, a,b,c):
+        a = tf.cast(a, 'float32') / 255.0
+        return a, b, c
+    
     def __call__(self, ann_paths, batch_size, is_training):
         ds = self._concatenate_ds(ann_paths)
         if is_training:
@@ -202,16 +215,67 @@ class DatasetBuilder:
                     aa_coords=np.reshape(aa_coords, (b, -1))
                     aa_coords=tf.cast((aa_coords-0.5)*2.0, tf.float32)
                     return aa_imgs, aa_coords
-            aug_imgs, aug_points = tf.numpy_function(do_augmentation, inp=[imgs, coords], Tout=[tf.float32, tf.float32])
+            aug_imgs, aug_points = tf.numpy_function(do_augmentation, inp=[imgs, coords], Tout=[tf.uint8, tf.float32])
             return aug_imgs, labels, aug_points
 
         ds = ds.map(self._tokenize, AUTOTUNE)
-        if is_training:
-            ds = ds.map(augmentation)
+        if is_training: 
+            ds = ds.map(augmentation, AUTOTUNE)
+        # convert uint8 to float32
+        ds = ds.map(self.dtype_transform, AUTOTUNE)
 
-        if self.require_coords:
+        if self.require_coords: 
             ds = ds.map(lambda a,b,c: (a, (b,c)))
-        else:
+        else: 
             ds = ds.map(lambda a,b,c: (a,(b,)))
         ds = ds.prefetch(AUTOTUNE)
         return ds
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--config', type=Path, required=True, help='The config file path.')
+    args = parser.parse_args()
+
+    target_path='./data_vis'
+    # shutil.rmtree(target_path, ignore_errors=True)
+    os.makedirs(target_path, exist_ok=True)
+    with args.config.open() as f:
+        config = yaml.load(f, Loader=yaml.Loader)['train']
+    dataset_builder = DatasetBuilder(**config['dataset_builder'], require_coords=False)
+    train_ds = dataset_builder(config['train_ann_paths'], 16, True)
+    val_ds = dataset_builder(config['val_ann_paths'], 16, False)
+
+    # Testing Augmentation for images
+    mylist=[]
+    for i, (a, b) in enumerate(train_ds, 1):
+        a=tf.cast(a*255.0, tf.uint8).numpy()
+        a=np.vstack(a)
+        mylist.append(a)
+        if len(mylist) != 2:
+            continue
+        else:
+            filename=f'{i//2}.png'
+            full_img = np.hstack(mylist)
+            cv2.imwrite(os.path.join(target_path, filename), full_img)
+            mylist=[]
+        if i == 8: break
+
+    # Testing Augmentation for single images
+    for i, (a,b) in enumerate(val_ds, 1):
+        single_img=a[0].numpy()
+        single_img=(single_img*255.0).astype(np.uint8)
+        break
+    aug_env = dataset_builder.create_aug_env()
+    col_list=[]
+    for c in range(4):
+        row_list=[]
+        for r in range(8):
+            res=aug_env(image=single_img)
+            row_list.append(res)
+        row_list = np.vstack(row_list)
+        col_list.append(row_list)
+    col_list = np.hstack(col_list)
+    col_list = col_list.astype(np.uint8)
+    cv2.imwrite(os.path.join(target_path, 'aug_img.png'),col_list)
+
+    

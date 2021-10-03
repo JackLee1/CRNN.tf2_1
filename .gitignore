@@ -6,3 +6,4 @@ configs/
 models/
 logs/
 demo/
+data_vis/

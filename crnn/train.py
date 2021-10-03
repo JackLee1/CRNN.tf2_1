@@ -3,25 +3,26 @@ import pprint
 import shutil
 import os
 from pathlib import Path
-
-
 import tensorflow as tf
 import yaml
-
 from dataset_factory import DatasetBuilder
 from losses import CTCLoss, LossBox
 from metrics import SequenceAccuracy
 from models import build_model
+import json
 from callbacks.callbacks import ImageCallback
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--config', type=Path, required=True, help='The config file path.')
 parser.add_argument('--save_dir', type=Path, required=True, help='The path to save the models, logs, etc.')
 parser.add_argument('--weight', type=str, default='', required=False, help='The pretrained weight of model.')
-parser.add_argument('--point4', type=bool, default=False, required=False, help='Four point to train STN')
+feature_parser = parser.add_mutually_exclusive_group(required=False)
+feature_parser.add_argument('--point4', dest='point4', action='store_true')
+feature_parser.add_argument('--no-point4', dest='point4', action='store_false')
+parser.set_defaults(point4=True)
 args = parser.parse_args()
 os.makedirs(f'{args.save_dir}/weights', exist_ok=True)
-
+os.makedirs(f'{args.save_dir}/configs', exist_ok=True)
 # Specify GPU usuage
 gpus = tf.config.list_physical_devices('GPU')
 if gpus:
@@ -34,10 +35,16 @@ if gpus:
     except RuntimeError as e:
         # Visible devices must be set before GPUs have been initialized
         print(e)
-
+tf.config.optimizer.set_jit(True)
+# Load and Save Config
 with args.config.open() as f:
     config = yaml.load(f, Loader=yaml.Loader)['train']
+for filename in ['models.py', 'dataset_factory.py', 'losses.py']:
+    shutil.copyfile(f'./crnn/{filename}', f'{args.save_dir}/configs/{filename}')
+shutil.copyfile(args.config, f'{args.save_dir}/configs/config.yml')
 pprint.pprint(config)
+
+
 
 args.save_dir.mkdir(exist_ok=True)
 shutil.copy(args.config, args.save_dir / args.config.name)
