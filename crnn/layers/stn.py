@@ -16,25 +16,32 @@ class BilinearInterpolation(Layer):
     def __init__(self, output_size, dynamic=True, **kwargs):
         self.output_size = output_size
         super(BilinearInterpolation, self).__init__(dynamic=dynamic, **kwargs)
+
     def get_config(self):
         return {'output_size': self.output_size}
+        
     def build(self, input_shapes):
       self.input_channel=input_shapes[0][-1]
       super(BilinearInterpolation, self).build(input_shapes)
+
     def compute_output_shape(self, input_shapes):
-        height, width = self.output_size
+        height = self.output_size[0]
+        width = self.output_size[1]
         return (None, height, width, self.input_channel)
+
     @tf.function(experimental_relax_shapes=True)
     def call(self, tensors, mask=None):
+        heihgt = self.output_size[0]
+        width = self.output_size[1]
         image, affine_transforms = tensors
         batch_size, num_channels = tf.shape(image)[0], tf.shape(image)[3]
         affine_transforms = K.reshape(affine_transforms, (batch_size, 2, 3))
-        grids = self._make_a_grid_per_batch(*self.output_size, batch_size)
+        grids = self._make_a_grid_per_batch(heihgt, width, batch_size)
         # Transform Coordinate
         grids = K.batch_dot(affine_transforms, grids)
         # Resampling Image
         interpolated_image = self._interpolate(image, grids, self.output_size)
-        new_shape = (batch_size, *self.output_size, self.input_channel)
+        new_shape = (batch_size, heihgt, width, self.input_channel)
         interpolated_image = tf.reshape(interpolated_image, new_shape)
         return interpolated_image
 

@@ -27,19 +27,21 @@ os.makedirs(f'{args.save_dir}/configs', exist_ok=True)
 gpus = tf.config.list_physical_devices('GPU')
 if gpus:
     # Restrict TensorFlow to only use the first GPU
+    print(gpus)
     try:
         for i in range(len(gpus)):
-            mem = 1024 * 7 if i == 0 else 1024 * 9
+            mem = 1024 * 10 if i == 0 else 1024 * 10
             tf.config.set_visible_devices(gpus[i], 'GPU')
             tf.config.set_logical_device_configuration(gpus[i], [tf.config.LogicalDeviceConfiguration(memory_limit=mem)])
     except RuntimeError as e:
         # Visible devices must be set before GPUs have been initialized
         print(e)
+
 tf.config.optimizer.set_jit(True)
 # Load and Save Config
 with args.config.open() as f:
     config = yaml.load(f, Loader=yaml.Loader)['train']
-for filename in ['models.py', 'dataset_factory.py', 'losses.py']:
+for filename in ['models.py', 'dataset_factory.py', 'losses.py', 'train.py']:
     shutil.copyfile(f'./crnn/{filename}', f'{args.save_dir}/configs/{filename}')
 shutil.copyfile(args.config, f'{args.save_dir}/configs/config.yml')
 pprint.pprint(config)
@@ -49,7 +51,7 @@ pprint.pprint(config)
 args.save_dir.mkdir(exist_ok=True)
 shutil.copy(args.config, args.save_dir / args.config.name)
 
-strategy = tf.distribute.MirroredStrategy()
+strategy = tf.distribute.MirroredStrategy(cross_device_ops=tf.distribute.HierarchicalCopyAllReduce())
 batch_size = config['batch_size_per_replica'] * strategy.num_replicas_in_sync
 print(config['dataset_builder'])
 dataset_builder = DatasetBuilder(**config['dataset_builder'], require_coords=args.point4)
@@ -70,18 +72,21 @@ with strategy.scope():
     model.summary()
 # Use validation accuracy to make sure load the right model
 if args.weight:
-    model.evaludate(val_ds)
+    svhn_val_data = dataset_builder(['../data/svhn/test/annotation_box.txt'], batch_size, False)
+    model.evaluate(svhn_val_data)
 
-best_model_prefix = 'best_model'
-best_model_path = f'{args.save_dir}/weights/{best_model_prefix}.h5'
+best_model_path = f'{args.save_dir}/weights/best_model.h5'
+best_acc_path = f'{args.save_dir}/weights/best_acc.h5'
 model_prefix = '{epoch}_{val_loss:.4f}_{val_ctc_logits_sequence_accuracy:.4f}' if args.point4 else '{epoch}_{val_loss:.4f}_{val_sequence_accuracy:.4f}'
 model_path = f'{args.save_dir}/weights/{model_prefix}.h5'
 callbacks = [
-    tf.keras.callbacks.ModelCheckpoint(best_model_path, save_weights_only=True, save_best_only=True),
+    tf.keras.callbacks.ModelCheckpoint(best_model_path, monitor='val_loss', save_weights_only=True, save_best_only=True),
+    tf.keras.callbacks.ModelCheckpoint(best_acc_path, monitor='val_ctc_logits_sequence_accuracy', save_weights_only=True, save_best_only=True, mode='max'),
     tf.keras.callbacks.ModelCheckpoint(model_path, save_weights_only=True, period=10),
     tf.keras.callbacks.TensorBoard(log_dir=f'{args.save_dir}/logs', **config['tensorboard']),
     ImageCallback(f'{args.save_dir}/images/', train_ds, stn_model, require_coords=args.point4),
-    tf.keras.callbacks.ReduceLROnPlateau(monitor='val_loss', factor=0.318, patience=15, min_lr=1e-8, verbose=1),
-    tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=51),
+    tf.keras.callbacks.ReduceLROnPlateau(monitor='val_ctc_logits_loss', factor=0.318, patience=15, min_lr=1e-8, verbose=1),
+    tf.keras.callbacks.EarlyStopping(monitor='val_ctc_logits_loss', patience=51),
 ]
-model.fit(train_ds, epochs=config['epochs'], callbacks=callbacks, validation_data=val_ds)
+model.fit(train_ds, epochs=config['epochs'], callbacks=callbacks, validation_data=val_ds,\
+    use_multiprocessing=False, workers=4)

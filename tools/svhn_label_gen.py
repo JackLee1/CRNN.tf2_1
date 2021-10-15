@@ -68,7 +68,7 @@ class DigitStructWrapper:
         pictDat = self.unpack()
         result = []
         structCnt = 1
-        for i in range(len(pictDat)):
+        for i in tqdm(range(len(pictDat))):
             item = {'filename': pictDat[i]["name"]}
             figures = []
             for j in range(len(pictDat[i]['height'])):

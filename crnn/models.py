@@ -1,4 +1,5 @@
 import numpy as np
+import tensorflow_addons as tfa
 from layers.stn import BilinearInterpolation
 from tensorflow import keras
 from tensorflow.keras import layers
@@ -44,22 +45,51 @@ def vgg_style(x):
     return x
 
 def build_stn(img, interpolation_size):
-    x = layers.Conv2D(32, (5, 5), padding='SAME')(img) # 20
+    # x = layers.Conv2D(32, (5, 5), padding='SAME')(img) # 20
+    # x = layers.BatchNormalization()(x)
+    # x = layers.ReLU(6)(x)
+    # x = layers.MaxPool2D(pool_size=(2, 2))(x)
+    # x = layers.Conv2D(64, (5, 5), padding='SAME')(x)    #20
+    # x = layers.BatchNormalization()(x)
+    # x = layers.ReLU(6)(x)
+    # x = layers.MaxPool2D(pool_size=(2, 2))(x)
+    # x = layers.Conv2D(128, (3, 3), padding='SAME', dilation_rate=2)(x)
+    # x = layers.BatchNormalization()(x)
+    # x = layers.ReLU(6)(x)
+    # # TODO change to global max pooling
+    # # TODO increasing channel number
+    # x = layers.GlobalAveragePooling2D()(x)
+    # x = layers.Flatten()(x)
+    # x = layers.Dense(32)(x)
+    # x = layers.ReLU(6)(x)
+    # transform_mat = layers.Dense(6, weights=get_initial_weights(32), name="stn")(x)
+    # interpolated_image = BilinearInterpolation(interpolation_size, name='bilinear_interpolation')([img, transform_mat])
+    # return interpolated_image, transform_mat
+    x = layers.Conv2D(32, (5, 5), padding='SAME', use_bias=False)(img) # 20
     x = layers.BatchNormalization()(x)
     x = layers.ReLU(6)(x)
     x = layers.MaxPool2D(pool_size=(2, 2))(x)
-    x = layers.Conv2D(64, (5, 5), padding='SAME')(x)    #20
+    x = layers.Conv2D(64, (5, 5), padding='SAME', use_bias=False)(x)    #20
     x = layers.BatchNormalization()(x)
     x = layers.ReLU(6)(x)
     x = layers.MaxPool2D(pool_size=(2, 2))(x)
-    x = layers.Conv2D(128, (3, 3), padding='SAME', dilation_rate=2)(x)
+    x = layers.Conv2D(128, (3, 3), padding='SAME', use_bias=False)(x)
     x = layers.BatchNormalization()(x)
     x = layers.ReLU(6)(x)
+    x = layers.Conv2D(128, (3, 3), padding='SAME', use_bias=False)(x)
+    x = layers.BatchNormalization()(x)
+    x = layers.ReLU(6)(x)
+    x = layers.Conv2D(128, (3, 3), padding='SAME', dilation_rate=2, use_bias=False)(x)
+    x = layers.BatchNormalization()(x) #10x50
+    # x = layers.ReLU(6)(x)
     # TODO change to global max pooling
     # TODO increasing channel number
-    x = layers.GlobalAveragePooling2D()(x)
+    x = tfa.layers.SpatialPyramidPooling2D([[4,24], [2,12]])(x) # 17408
+
     x = layers.Flatten()(x)
-    x = layers.Dense(32)(x)
+    x = layers.Dropout(0.35)(x)
+    x = layers.Dense(32, use_bias=False)(x) # 32
+    x = layers.BatchNormalization()(x)
     x = layers.ReLU(6)(x)
     transform_mat = layers.Dense(6, weights=get_initial_weights(32), name="stn")(x)
     interpolated_image = BilinearInterpolation(interpolation_size, name='bilinear_interpolation')([img, transform_mat])
@@ -96,4 +126,11 @@ def build_model(num_classes,
     stn_model = keras.Model(inputs=img_input, outputs=[interpolate_img, transform_mat])
     if weight:
         model.load_weights(weight, by_name=True, skip_mismatch=True)
+        trainable=False
+        for layer in model.layers:
+            if layer.name in ['conv2d_2','conv2d_3','conv2d_8']:
+                trainable = not trainable
+            layer.trainable = trainable
+            print(f'{layer.name} {layer.trainable}')
+        
     return model, stn_model

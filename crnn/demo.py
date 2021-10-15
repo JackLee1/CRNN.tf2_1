@@ -14,6 +14,7 @@ from metrics import SequenceAccuracy
 from models import build_model
 from decoders import CTCGreedyDecoder, CTCBeamSearchDecoder
 from layers.stn import BilinearInterpolation
+import glob
 import cv2
 import os
 
@@ -22,9 +23,11 @@ parser.add_argument('--config', type=Path, required=True, help='The config file 
 parser.add_argument('--images', type=str, required=True, help='The image file path.')
 parser.add_argument('--structure', type=str, required=True, help='Model Structure')
 parser.add_argument('--weight', type=str, default='', required=False, help='Model Weight')
-parser.add_argument('--count', type=int, default=10, required=False, help='number of image to demo')
-
+parser.add_argument('--count', type=int, default=30, required=False, help='number of image to demo')
 args = parser.parse_args()
+if args.structure == '':
+    args.structure = os.path.join(os.path.dirname(args.weight), 'structure.h5')
+
 
 def read_img_and_resize(path, shape):
     img = tf.io.read_file(path)
@@ -73,25 +76,28 @@ model = tf.keras.Model(inputs=input_tensor, outputs=[output_tensor1, output_tens
 
 model_pre = keras.layers.experimental.preprocessing.Rescaling(1./255)
 model_post = CTCGreedyDecoder(config['dataset_builder']['table_path'])
+model.build((None, 48, None, 3))
 model.summary()
 
 shutil.rmtree('demo', ignore_errors=True)
 os.makedirs('demo', exist_ok=True)
 
-p = Path(args.images)
-img_paths = p.iterdir() if p.is_dir() else [p]
+img_paths = []
+for prefix in ['*.jpg','*.png']:
+    img_paths = img_paths + glob.glob(os.path.join(args.images, prefix))
 for i,img_path in enumerate(img_paths):
     if i == args.count: break
     img_path = str(img_path)
     img = read_img_and_resize(img_path, config['dataset_builder']['img_shape'])
     img = tf.expand_dims(img, 0)
-    img = tf.repeat(img, 3, axis=0)
+    padding = tf.zeros((1, tf.shape(img)[1], 50, 3))
+    img = tf.concat([padding, img, padding], axis=2)
 
     result = model_pre(img)
     result, interpolate_img = model(result)
     result = model_post(result)
     
-    print(f'Path: {img_path}, y_pred: {result[0].numpy()}, 'f'probability: {result[1].numpy()}')
+    print(f'Path: {img_path}, y_pred: {result[0].numpy()}',  f'probability: {result[1].numpy()}')
 
     predict_string=result[0].numpy()[0].decode('utf-8')
     embedding_string=f'{predict_string}'

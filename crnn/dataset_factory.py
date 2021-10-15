@@ -154,9 +154,9 @@ class DatasetBuilder:
             iaa.Sometimes(1.0, 
                 iaa.Affine(
                     scale={"x": (0.8, 1.3), "y": (0.6, 1.2)},
-                    translate_percent={"x": (-0.15, 0.15), "y": (-0.05, 0.05)},
-                    shear={"x": (-15, 15), "y": (-5, 5)},
-                    rotate=(5,-5)#(-15,15)
+                    translate_percent={"x": (-0.3, 0.3), "y": (-0.05, 0.05)},
+                    shear={"x": (-10, 10), "y": (-5, 5)},
+                    rotate=(3,-3)#
                 ),    
             ),
             iaa.Sometimes(p, 
@@ -166,7 +166,7 @@ class DatasetBuilder:
                 ])
             ),
             iaa.SomeOf((0, 2), [
-                iaa.ChannelShuffle(1.0),
+                iaa.ChannelShuffle(0.3),
                 # iaa.AdditiveGaussianNoise(scale=0.05*255),
                 iaa.GammaContrast(gamma=(0.5,1.4)),
                 iaa.Multiply((0.7, 1.2)),

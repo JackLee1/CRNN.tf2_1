@@ -66,8 +66,8 @@ class ImageCallback(keras.callbacks.Callback):
                 img = images[ii].copy()
                 for iii in range(n_points):
                     if self.require_coords: 
-                        images[ii] = cv2.circle(img, tuple(gcoords[ii,2*iii:2*(iii+1)]), 3, (255, 0, 0), -1)
-                    images[ii] = cv2.circle(img, tuple(pcoords[ii,2*iii:2*(iii+1)]), 3, (0, 0, 255), -1)
+                        images[ii] = cv2.circle(img, tuple(gcoords[ii,2*iii:2*(iii+1)]), 3, (int(127+128/4*iii), 0, 0), -1)
+                    images[ii] = cv2.circle(img, tuple(pcoords[ii,2*iii:2*(iii+1)]), 3, (0, 0, int(127+128/4*iii)), -1)
                     
             images = np.vstack(images)
             # process stn_result
@@ -82,7 +82,7 @@ class ImageCallback(keras.callbacks.Callback):
             # total image
             filename = f'epoch_{epoch}_{i}.png'
             show_result = np.concatenate([images, stn_result], axis=1)
-            cv2.imwrite(os.path.join(self.folder, filename), show_result)
+            cv2.imwrite(os.path.join(self.folder, filename), show_result[...,::-1])
             if i == self.count: break
 
 

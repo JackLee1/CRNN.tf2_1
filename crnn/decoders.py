@@ -20,8 +20,10 @@ class CTCGreedyDecoder(CTCDecoder):
     def __init__(self, table_path, merge_repeated=True, **kwargs):
         super().__init__(table_path, **kwargs)
         self.merge_repeated = merge_repeated
-        
+
+    @tf.function(experimental_relax_shapes=True)
     def call(self, inputs):
+        # (batch_size timestep, classes)
         input_shape = tf.shape(inputs)
         sequence_length = tf.fill([input_shape[0]], input_shape[1])
         decoded, neg_sum_logits = tf.nn.ctc_greedy_decoder(
