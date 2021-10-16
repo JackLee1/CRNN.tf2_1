@@ -84,10 +84,10 @@ def build_stn(img, interpolation_size):
     # x = layers.ReLU(6)(x)
     # TODO change to global max pooling
     # TODO increasing channel number
-    x = tfa.layers.SpatialPyramidPooling2D([[4,24], [2,12]])(x) # 17408
+    x = tfa.layers.SpatialPyramidPooling2D([[6,9],[4,6],[2,3]])(x) # 17408
+    # x = tfa.layers.SpatialPyramidPooling2D([[6,24],[4,16],[2,8]])(x) # 17408
 
     x = layers.Flatten()(x)
-    x = layers.Dropout(0.35)(x)
     x = layers.Dense(32, use_bias=False)(x) # 32
     x = layers.BatchNormalization()(x)
     x = layers.ReLU(6)(x)

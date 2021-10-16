@@ -37,6 +37,11 @@ class SequenceAccuracy(keras.metrics.Metric):
         num_errors = tf.cast(num_errors, tf.float32)
         num_errors = tf.math.reduce_sum(num_errors)
         batch_size = tf.cast(batch_size, tf.float32)
+        
+        any_nan = tf.math.reduce_any(tf.math.is_nan(y_pred))
+        any_large = tf.math.reduce_any(tf.math.abs(y_pred) > 1000.0)
+        if any_large or any_nan:
+            tf.print(tf.math.reduce_max(y_pred), tf.math.reduce_min(y_pred))
         self.total.assign_add(batch_size)
         self.count.assign_add(batch_size - num_errors)
 

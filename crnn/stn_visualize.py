@@ -18,6 +18,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--config', type=str, required=True, help='The config file path.')
 parser.add_argument('--weight', type=str, default='', required=False, help='The saved weight path.')
 parser.add_argument('--structure', type=str, default='', required=False, help='The saved structure path.')
+parser.add_argument('--iou', type=float, default=0.5, required=False, help='IoU threshold')
 args = parser.parse_args()
 args.point4=True
 if args.structure == '':
@@ -148,14 +149,14 @@ for i, (images, (ctc_label, stn_label)) in enumerate(val_ds):
             t_iou = iou[ii]
             str_iou = str(t_iou)[2:4]
             total+=1
-            if t_iou > 0.5: 
+            if t_iou > args.iou: 
                 acc+=1
                 save_path = os.path.join(true_path, f'{i*batch_size+ii}_{str_iou}.png')
             else: save_path = os.path.join(false_path, f'{i*batch_size+ii}_{str_iou}.png')
-            label_list.append(int(t_iou > 0.5))
+            label_list.append(int(t_iou > args.iou))
             if i < 100:
                 cv2.imwrite(save_path, images[ii,...,::-1])
-                print(f'{save_path:40s} {t_iou > 0.5}')
+                print(f'{save_path:40s} {t_iou > args.iou}')
 
         hw = g_goordf[:,2:4] - g_goordf[:,:2]
         h = hw[:,0]
