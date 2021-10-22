@@ -28,7 +28,6 @@ args = parser.parse_args()
 if args.structure == '':
     args.structure = os.path.join(os.path.dirname(args.weight), 'structure.h5')
 
-
 def read_img_and_resize(path, shape):
     img = tf.io.read_file(path)
     img = tf.io.decode_jpeg(img, channels=shape[2])
@@ -85,6 +84,7 @@ os.makedirs('demo', exist_ok=True)
 img_paths = []
 for prefix in ['*.jpg','*.png']:
     img_paths = img_paths + glob.glob(os.path.join(args.images, prefix))
+    
 for i,img_path in enumerate(img_paths):
     if i == args.count: break
     img_path = str(img_path)
@@ -101,13 +101,13 @@ for i,img_path in enumerate(img_paths):
 
     predict_string=result[0].numpy()[0].decode('utf-8')
     embedding_string=f'{predict_string}'
+
     # Demonstrate Image
     img = img[0].numpy()
     img = img[..., ::-1].copy()
     img = cv2.rectangle(img, (0,0), (0 + 20, 10 ), (255,255,255), -1)
     img = cv2.putText(img, embedding_string, (0,10), cv2.FONT_HERSHEY_COMPLEX, 0.4, (0, 0, 255), 1, cv2.LINE_AA)
     
-    # if args.return_stn:
     # STN Output Image
     stn_img = interpolate_img[0].numpy()
     h, w = stn_img.shape[:2]
@@ -116,6 +116,7 @@ for i,img_path in enumerate(img_paths):
     stn_img = stn_img[..., ::-1]
     stn_img = cv2.resize(stn_img, (w,h))
     stn_img = (stn_img * 255.).astype(np.uint8)
+
     # Demo Image
     demo_img = np.hstack([img, stn_img])
 

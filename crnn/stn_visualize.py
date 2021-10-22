@@ -130,7 +130,7 @@ for i, (images, (ctc_label, stn_label)) in enumerate(val_ds):
     for ii in range(len(images)):
         img = images[ii].copy()
         for iii in range(4):
-            images[ii] = cv2.circle(img, tuple(g_goord[ii,2*iii:2*(iii+1)]), 3, (255, 0, 0), -1)
+            # images[ii] = cv2.circle(img, tuple(g_goord[ii,2*iii:2*(iii+1)]), 3, (255, 0, 0), -1)
             images[ii] = cv2.circle(img, tuple(p_coord[ii,2*iii:2*(iii+1)]), 3, (0, 0, 255), -1)
 
 
@@ -167,13 +167,13 @@ for i, (images, (ctc_label, stn_label)) in enumerate(val_ds):
 
 
 
-h_list=np.concatenate(h_list)
-w_list=np.concatenate(w_list)
-label_list=np.array(label_list)
+# h_list=np.concatenate(h_list)
+# w_list=np.concatenate(w_list)
+# label_list=np.array(label_list)
 
-f_points=plt.scatter(x=h_list[label_list==0],y=w_list[label_list==0], marker = 'D', color='r', s=1)
-t_points=plt.scatter(x=h_list[label_list==1],y=w_list[label_list==1], marker = 'D', color='g', s=1)
-plt.legend([f_points, t_points], ['false', 'true'], loc='lower right', scatterpoints=1)
+# f_points=plt.scatter(x=h_list[label_list==0],y=w_list[label_list==0], marker = 'D', color='r', s=1)
+# t_points=plt.scatter(x=h_list[label_list==1],y=w_list[label_list==1], marker = 'D', color='g', s=1)
+# plt.legend([f_points, t_points], ['false', 'true'], loc='lower right', scatterpoints=1)
 
 # plt.legend([t_points, f_points], ['True', 'False'])
 # plt.savefig(os.path.join(stn_vis_dir, 'area.png'))

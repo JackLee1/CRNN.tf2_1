@@ -6,7 +6,7 @@ from pathlib import Path
 import tensorflow as tf
 import yaml
 from dataset_factory import DatasetBuilder
-from losses import CTCLoss, LossBox
+from losses import CTCLoss, LossBox, diou_loss, average_diou
 from metrics import SequenceAccuracy
 from models import build_model
 import json
@@ -51,25 +51,25 @@ pprint.pprint(config)
 args.save_dir.mkdir(exist_ok=True)
 shutil.copy(args.config, args.save_dir / args.config.name)
 
-strategy = tf.distribute.MirroredStrategy(cross_device_ops=tf.distribute.HierarchicalCopyAllReduce())
-batch_size = config['batch_size_per_replica'] * strategy.num_replicas_in_sync
+# strategy = tf.distribute.MirroredStrategy(cross_device_ops=tf.distribute.HierarchicalCopyAllReduce())
+batch_size = config['batch_size_per_replica'] * 1 #strategy.num_replicas_in_sync
 print(config['dataset_builder'])
 dataset_builder = DatasetBuilder(**config['dataset_builder'], require_coords=args.point4)
 train_ds = dataset_builder(config['train_ann_paths'], batch_size, True)
 val_ds = dataset_builder(config['val_ann_paths'], batch_size, False)
 
-with strategy.scope():
-    model, stn_model = build_model(dataset_builder.num_classes,
-                        require_coords=args.point4,
-                        weight=args.weight,
-                        img_shape=config['dataset_builder']['img_shape'])
-    lr=config['lr_schedule']['initial_learning_rate']
-    opt=tf.keras.optimizers.Adam(lr)
-    model.compile(optimizer=opt, loss=[[CTCLoss()],[LossBox()]], metrics={
-        "ctc_logits":SequenceAccuracy()
-    })
-    model.save(os.path.join(args.save_dir, 'weights', 'structure.h5'),include_optimizer=False)
-    model.summary()
+# with strategy.scope():
+model, stn_model = build_model(dataset_builder.num_classes,
+                    require_coords=args.point4,
+                    weight=args.weight,
+                    img_shape=config['dataset_builder']['img_shape'])
+lr=config['lr_schedule']['initial_learning_rate']
+opt=tf.keras.optimizers.Adam(lr)
+model.compile(optimizer=opt, loss=[[CTCLoss()],[LossBox()]], metrics={
+    "ctc_logits":SequenceAccuracy()
+})
+model.save(os.path.join(args.save_dir, 'weights', 'structure.h5'),include_optimizer=False)
+model.summary()
 # Use validation accuracy to make sure load the right model
 if args.weight:
     svhn_val_data = dataset_builder(['../data/svhn/test/annotation_box.txt'], batch_size, False)

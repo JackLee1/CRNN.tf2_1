@@ -4,6 +4,15 @@ from layers.stn import BilinearInterpolation
 from tensorflow import keras
 from tensorflow.keras import layers
 
+def separable_conv(x, p_filters, d_kernel_size=(3,3), d_strides=(1,1), d_padding='valid'):
+    x = layers.DepthwiseConv2D(kernel_size=d_kernel_size, strides=d_strides, padding=d_padding, use_bias=True)(x)
+    # x = layers.BatchNormalization()(x)
+    # x = layers.ReLU(6)(x)
+    x = layers.Conv2D(p_filters, kernel_size=(1,1), strides=(1,1), use_bias=False)(x)
+    x = layers.BatchNormalization()(x)
+    x = layers.ReLU(6)(x)
+    return x
+
 def get_initial_weights(output_size):
     b = np.random.normal(0.0, 0.001, (2, 3))            # init weight zero won't trigger backpropagation
     b[0, 0] = 0.25
@@ -32,14 +41,9 @@ def vgg_style(x):
     x = layers.ReLU(6)(x)
     x = layers.MaxPool2D(pool_size=2, strides=(2, 1), padding='same')(x)
 
-    x = layers.Conv2D(512, 3, padding='same', use_bias=False)(x)
-    x = layers.BatchNormalization()(x)
-    x = layers.ReLU(6)(x)
+    x = separable_conv(x, p_filters=512, d_kernel_size=(3,3), d_strides=(1,1), d_padding='same')
     x = layers.MaxPool2D(pool_size=2, strides=(2, 1), padding='same')(x)
-
-    x = layers.Conv2D(512, 3, use_bias=False)(x)
-    x = layers.BatchNormalization()(x)
-    x = layers.ReLU(6)(x)
+    x = separable_conv(x, p_filters=512, d_kernel_size=(3,3), d_strides=(1,1), d_padding='valid')
 
     x = layers.Reshape((-1, 512))(x)
     return x
@@ -76,10 +80,21 @@ def build_stn(img, interpolation_size):
     x = layers.Conv2D(128, (3, 3), padding='SAME', use_bias=False)(x)
     x = layers.BatchNormalization()(x)
     x = layers.ReLU(6)(x)
-    x = layers.Conv2D(128, (3, 3), padding='SAME', use_bias=False)(x)
-    x = layers.BatchNormalization()(x)
-    x = layers.ReLU(6)(x)
-    x = layers.Conv2D(128, (3, 3), padding='SAME', dilation_rate=2, use_bias=False)(x)
+
+    x1 = layers.Conv2D(128, (3, 3), padding='SAME', dilation_rate=1, use_bias=False)(x)
+    x1 = layers.BatchNormalization()(x1)
+    x1 = layers.ReLU(6)(x1)
+
+    x2 = layers.Conv2D(128, (3, 3), padding='SAME', dilation_rate=2, use_bias=False)(x)
+    x2 = layers.BatchNormalization()(x2)
+    x2 = layers.ReLU(6)(x2)
+
+    x3 = layers.Conv2D(128, (3, 3), padding='SAME', dilation_rate=3, use_bias=False)(x)
+    x3 = layers.BatchNormalization()(x3)
+    x3 = layers.ReLU(6)(x3)
+
+    x = layers.Concatenate()([x1,x2,x3])
+    x = layers.Conv2D(256, (1, 1), padding='SAME', use_bias=False)(x)
     x = layers.BatchNormalization()(x) #10x50
     # x = layers.ReLU(6)(x)
     # TODO change to global max pooling
@@ -128,7 +143,7 @@ def build_model(num_classes,
         model.load_weights(weight, by_name=True, skip_mismatch=True)
         trainable=False
         for layer in model.layers:
-            if layer.name in ['conv2d_2','conv2d_3','conv2d_8']:
+            if layer.name in ['concatenate','conv2d_7','re_lu_11']:
                 trainable = not trainable
             layer.trainable = trainable
             print(f'{layer.name} {layer.trainable}')
