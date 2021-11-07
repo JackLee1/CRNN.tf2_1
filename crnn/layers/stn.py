@@ -36,14 +36,18 @@ class BilinearInterpolation(Layer):
         image, affine_transforms = tensors
         batch_size, num_channels = tf.shape(image)[0], tf.shape(image)[3]
         affine_transforms = K.reshape(affine_transforms, (batch_size, 2, 3))
+       
+        #set rotation to 0
+        array = affine_transforms.numpy()
+        array[0,1] = 0
+        array[1,0] = 0
+        affine_transforms = tf.convert_to_tensor(array, dtype=tf.float32)
+        
         
         #print affine_transforms number
-        #tf.compat.v1.diasble_eager_execution()
-        #sess = tf.compat.v1.InteractiveSession()
-        #sess.run(tf.compat.v1.global_variables_initializer())
-        #nd_transforms = sess.run(affine_transforms)
-        #print(nd_transforms)
+        print("////////////////////////////////////////////")
         tf.print(affine_transforms)
+        print("\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\")
         
         grids = self._make_a_grid_per_batch(heihgt, width, batch_size)
         # Transform Coordinate
