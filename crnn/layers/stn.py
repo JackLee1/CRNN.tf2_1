@@ -39,8 +39,8 @@ class BilinearInterpolation(Layer):
        
         #set rotation to 0
         #new_tensor = tf.Variable(affine_transforms)
-        affine_transforms[0,1].assign(0)
-        affine_transforms[1,0].assign(0)
+        #affine_transforms[0,1].assign(0)
+        #affine_transforms[1,0].assign(0)
         #affine_transforms = tf.convert_to_tensor(new_tensor, dtype=tf.float32)
         
         
