@@ -38,7 +38,9 @@ class BilinearInterpolation(Layer):
         affine_transforms = K.reshape(affine_transforms, (batch_size, 2, 3))
        
         #set rotation to 0
-        array = affine_transforms.numpy()
+        sess = tf.compat.v1.Session()
+        array = affine_transforms.eval(session = sess)
+        #array = affine_transforms.numpy()
         array[0,1] = 0
         array[1,0] = 0
         affine_transforms = tf.convert_to_tensor(array, dtype=tf.float32)
