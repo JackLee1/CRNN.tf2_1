@@ -39,7 +39,7 @@ class BilinearInterpolation(Layer):
         # affine_transforms=(batch, 4) [0,1,2,3] => [0,x,1,x,2,3]
         zeros=tf.zeros_like(affine_transforms)[:,:1]
         # affine_transforms=(batch, 6)
-        affine_transforms = tf.concat([affine_transforms[:,0:1], zeros, affine_transforms[:,1:2], zeros, affine_transforms[:,2:4]],0)
+        affine_transforms = tf.concat([affine_transforms[:,0:1], zeros, affine_transforms[:,1:2], zeros, affine_transforms[:,2:4]],1)
 
         affine_transforms = K.reshape(affine_transforms, (batch_size, 2, 3))
         grids = self._make_a_grid_per_batch(heihgt, width, batch_size)
