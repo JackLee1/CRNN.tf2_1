@@ -14,10 +14,10 @@ def separable_conv(x, p_filters, d_kernel_size=(3,3), d_strides=(1,1), d_padding
     return x
 
 def get_initial_weights(output_size):
-    b = np.random.normal(0.0, 0.001, (2, 3))            # init weight zero won't trigger backpropagation
+    b = np.random.normal(0.0, 0.001, (2, 2))            # init weight zero won't trigger backpropagation
     b[0, 0] = 0.25
     b[1, 1] = 0.5
-    W = np.random.normal(0.0, 0.01, (output_size, 6))  # init weight zero won't trigger backpropagation
+    W = np.random.normal(0.0, 0.01, (output_size, 4))  # init weight zero won't trigger backpropagation
     weights = [W, b.flatten()]
     return weights
 
@@ -106,7 +106,7 @@ def build_stn(img, interpolation_size):
     x = layers.Dense(32, use_bias=False)(x) # 32
     x = layers.BatchNormalization()(x)
     x = layers.ReLU(6)(x)
-    transform_mat = layers.Dense(6, weights=get_initial_weights(32), name="stn")(x)
+    transform_mat = layers.Dense(4, weights=get_initial_weights(32), name="stn")(x)
     interpolated_image = BilinearInterpolation(interpolation_size, name='bilinear_interpolation')([img, transform_mat])
     return interpolated_image, transform_mat
 
