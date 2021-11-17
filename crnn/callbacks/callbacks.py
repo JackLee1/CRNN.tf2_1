@@ -36,6 +36,7 @@ class ImageCallback(keras.callbacks.Callback):
             # affine_transforms=(batch, 6)
             transform_mat = tf.concat([transform_mat[:,0:1], zeros, transform_mat[:,1:2], zeros, transform_mat[:,2:4]],1)
 
+        tf.print(tf.shape(transform_mat))
         transform_mat = transform_mat.reshape((-1, 2, 3))
         my_coord = np.array([[
             [-1,-1,1],
