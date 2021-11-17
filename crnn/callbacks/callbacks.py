@@ -14,7 +14,7 @@ class ImageCallback(keras.callbacks.Callback):
           as inputs and returns a new learning rate as output (float).
   """
 
-    def __init__(self, folder, dataset, stn_model, require_coords, row=8, count=2, ):
+    def __init__(self, folder, dataset, stn_model, require_coords, row=8, count=2, point=6):
         super(ImageCallback, self).__init__()
         shutil.rmtree(folder, ignore_errors=True)
         os.makedirs(folder)
@@ -24,11 +24,18 @@ class ImageCallback(keras.callbacks.Callback):
         self.require_coords = require_coords
         self.row=row
         self.count = count
+        self.point = point
     
     def get_predict_point(self, transform_mat):
         """
         transform_mat: (batch, 6)
         """
+
+        if self.point == 4:
+            zeros=tf.zeros_like(transform_mat)[:,:1]
+            # affine_transforms=(batch, 6)
+            transform_mat = tf.concat([transform_mat[:,0:1], zeros, transform_mat[:,1:2], zeros, transform_mat[:,2:4]],1)
+
         transform_mat = transform_mat.reshape((-1, 2, 3))
         my_coord = np.array([[
             [-1,-1,1],

@@ -84,7 +84,7 @@ callbacks = [
     tf.keras.callbacks.ModelCheckpoint(best_acc_path, monitor='val_ctc_logits_sequence_accuracy', save_weights_only=True, save_best_only=True, mode='max'),
     tf.keras.callbacks.ModelCheckpoint(model_path, save_weights_only=True, period=10),
     tf.keras.callbacks.TensorBoard(log_dir=f'{args.save_dir}/logs', **config['tensorboard']),
-    ImageCallback(f'{args.save_dir}/images/', train_ds, stn_model, require_coords=args.point4),
+    ImageCallback(f'{args.save_dir}/images/', train_ds, stn_model, require_coords=args.point4 , point=4),
     tf.keras.callbacks.ReduceLROnPlateau(monitor='val_ctc_logits_loss', factor=0.318, patience=15, min_lr=1e-8, verbose=1),
     tf.keras.callbacks.EarlyStopping(monitor='val_ctc_logits_loss', patience=51),
 ]

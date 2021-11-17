@@ -111,6 +111,9 @@ class LossBox(keras.losses.Loss):
             1st is the output logits from RNN
             2nd is the output transform matrix
         """
+        zeros=tf.zeros_like(y_pred)[:,:1]
+        # affine_transforms=(batch, 6)
+        y_pred = tf.concat([y_pred[:,0:1], zeros, y_pred[:,1:2], zeros, y_pred[:,2:4]],1)
         
         y_pred = tf.reshape(y_pred, (-1, 2, 3))                     # (batch, 2, 3)
         pred_coord =  tf.linalg.matmul(y_pred, self.stn_points)    # (batch, 2, 3) * (batch, 3, n_pionts) = (batch, 2, n_points)
