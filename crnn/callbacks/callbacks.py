@@ -40,8 +40,8 @@ class ImageCallback(keras.callbacks.Callback):
         #print(type(transform_mat[1]), transform_mat.shape,transform_mat) 
         #tf.print(tf.shape(transform_mat))
         transform_mat = np.array(transform_mat)
-        print("\n\nafter\n\n")
-        print(type(transform_mat[1]), transform_mat.shape,transform_mat)
+        #print("\n\nafter\n\n")
+        #print(type(transform_mat[1]), transform_mat.shape,transform_mat)
 
         transform_mat = transform_mat.reshape((-1, 2, 3))
         my_coord = np.array([[
