@@ -36,8 +36,8 @@ class ImageCallback(keras.callbacks.Callback):
             # affine_transforms=(batch, 6)
             transform_mat = tf.concat([transform_mat[:,0:1], zeros, transform_mat[:,1:2], zeros, transform_mat[:,2:4]],1)
         
-        print("get_predict_point : transform_mat  ",end = "")
-        print(type(transform_mat[1]), transform_mat.shape,transform_mat) 
+        #print("get_predict_point : transform_mat  ",end = "")
+        #print(type(transform_mat[1]), transform_mat.shape,transform_mat) 
         #tf.print(tf.shape(transform_mat))
         transform_mat = np.array(transform_mat)
         print("\n\nafter\n\n")
@@ -72,8 +72,8 @@ class ImageCallback(keras.callbacks.Callback):
             images = (images*255.).astype(np.uint8)
             transform_mat = transform_mat.numpy()[:self.row]
 
-            print("on_epoch_end : transform_mat  ",end = "")
-            print(type(transform_mat[1]), transform_mat.shape,transform_mat) 
+            #print("on_epoch_end : transform_mat  ",end = "")
+            #print(type(transform_mat[1]), transform_mat.shape,transform_mat) 
             #tf.print(tf.shape(transform_mat))
 
             pcoords = self.coord_to_int(self.get_predict_point(transform_mat), images.shape)
