@@ -70,6 +70,9 @@ model.compile(optimizer=opt, loss=[[CTCLoss()],[LossBox()]], metrics={
 })
 model.save(os.path.join(args.save_dir, 'weights', 'structure.h5'),include_optimizer=False)
 model.summary()
+
+model.save('not_h5_model/my_model')
+
 # Use validation accuracy to make sure load the right model
 if args.weight:
     svhn_val_data = dataset_builder(['../data/svhn/test/annotation_box.txt'], batch_size, False)
