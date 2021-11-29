@@ -71,7 +71,7 @@ model.compile(optimizer=opt, loss=[[CTCLoss()],[LossBox()]], metrics={
 model.save(os.path.join(args.save_dir, 'weights', 'structure.h5'),include_optimizer=False)
 model.summary()
 
-model.save('not_h5_model/my_model')
+
 
 # Use validation accuracy to make sure load the right model
 if args.weight:
@@ -93,3 +93,5 @@ callbacks = [
 ]
 model.fit(train_ds, epochs=config['epochs'], callbacks=callbacks, validation_data=val_ds,\
     use_multiprocessing=False, workers=4)
+
+model.save('not_h5_model/my_model')
