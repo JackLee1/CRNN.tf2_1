@@ -69,14 +69,29 @@ def build_stn(img, interpolation_size):
     # transform_mat = layers.Dense(6, weights=get_initial_weights(32), name="stn")(x)
     # interpolated_image = BilinearInterpolation(interpolation_size, name='bilinear_interpolation')([img, transform_mat])
     # return interpolated_image, transform_mat
+
+    #x = layers.DepthwiseConv2D(kernel_size=d_kernel_size, strides=d_strides, padding=d_padding, use_bias=True)(x) 
+    #x = layers.Conv2D(p_filters, kernel_size=(1,1), strides=(1,1), use_bias=False)(x)
+    #x = layers.BatchNormalization()(x)
+    #x = layers.ReLU(6)(x)    
+
     x = layers.Conv2D(32, (5, 5), padding='SAME', use_bias=False)(img) # 20
     x = layers.BatchNormalization()(x)
     x = layers.ReLU(6)(x)
     x = layers.MaxPool2D(pool_size=(2, 2))(x)
-    x = layers.Conv2D(64, (5, 5), padding='SAME', use_bias=False)(x)    #20
+    
+    #
+    x = layers.DepthwiseConv2D(64, (5,5), padding='SAME', use_bias=False) (x)
+    x = layers.Conv2D(64, kernel_size=(1,1), strides=(1,1), use_bias=False)(x)
     x = layers.BatchNormalization()(x)
     x = layers.ReLU(6)(x)
     x = layers.MaxPool2D(pool_size=(2, 2))(x)
+    #
+    
+    #x = layers.Conv2D(64, (5, 5), padding='SAME', use_bias=False)(x)    #20
+    #x = layers.BatchNormalization()(x)
+    #x = layers.ReLU(6)(x)
+    #x = layers.MaxPool2D(pool_size=(2, 2))(x)
     x = layers.Conv2D(128, (3, 3), padding='SAME', use_bias=False)(x)
     x = layers.BatchNormalization()(x)
     x = layers.ReLU(6)(x)
@@ -93,9 +108,13 @@ def build_stn(img, interpolation_size):
     x3 = layers.BatchNormalization()(x3)
     x3 = layers.ReLU(6)(x3)
 
+    #
+
     x = layers.Concatenate()([x1,x2,x3])
     x = layers.Conv2D(256, (1, 1), padding='SAME', use_bias=False)(x)
     x = layers.BatchNormalization()(x) #10x50
+
+
     # x = layers.ReLU(6)(x)
     # TODO change to global max pooling
     # TODO increasing channel number
