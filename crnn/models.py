@@ -80,8 +80,8 @@ def build_stn(img, interpolation_size):
     x = layers.ReLU(6)(x)
     x = layers.MaxPool2D(pool_size=(2, 2))(x)
     
-    #
-    x = layers.DepthwiseConv2D(64, (5,5), padding='SAME', use_bias=False) (x)
+    #DepthwiseConv2D(kernel_size=d_kernel_size, strides=d_strides, padding=d_padding, use_bias=True)(x)
+    x = layers.DepthwiseConv2D( (5,5), (1,1), padding='SAME', use_bias=False) (x)
     x = layers.Conv2D(64, kernel_size=(1,1), strides=(1,1), use_bias=False)(x)
     x = layers.BatchNormalization()(x)
     x = layers.ReLU(6)(x)
@@ -92,21 +92,47 @@ def build_stn(img, interpolation_size):
     #x = layers.BatchNormalization()(x)
     #x = layers.ReLU(6)(x)
     #x = layers.MaxPool2D(pool_size=(2, 2))(x)
-    x = layers.Conv2D(128, (3, 3), padding='SAME', use_bias=False)(x)
+    
+    #
+
+    x = layers.DepthwiseConv2D( (3,3),(1,1), padding='SAME', use_bias=False) (x)
+    x = layers.Conv2D(128, kernel_size=(1,1), strides=(1,1), use_bias=False)(x)
     x = layers.BatchNormalization()(x)
     x = layers.ReLU(6)(x)
 
-    x1 = layers.Conv2D(128, (3, 3), padding='SAME', dilation_rate=1, use_bias=False)(x)
+    #x = layers.Conv2D(128, (3, 3), padding='SAME', use_bias=False)(x)
+    #x = layers.BatchNormalization()(x)
+    #x = layers.ReLU(6)(x)
+
+    x1 = layers.DepthwiseConv2D( (3,3), (1,1), padding='SAME', use_bias=False, dilation_rate=1) (x)
+    x1 = layers.Conv2D(128, kernel_size=(1,1), strides=(1,1), use_bias=False, dilation_rate=1)(x1)
     x1 = layers.BatchNormalization()(x1)
     x1 = layers.ReLU(6)(x1)
 
-    x2 = layers.Conv2D(128, (3, 3), padding='SAME', dilation_rate=2, use_bias=False)(x)
+    #x1 = layers.Conv2D(128, (3, 3), padding='SAME', dilation_rate=1, use_bias=False)(x)
+    #x1 = layers.BatchNormalization()(x1)
+    #x1 = layers.ReLU(6)(x1)
+    
+    #
+    x2 = layers.DepthwiseConv2D( (3,3), (1,1), padding='SAME', use_bias=False, dilation_rate=2) (x)
+    x2 = layers.Conv2D(128, kernel_size=(1,1), strides=(1,1), use_bias=False, dilation_rate=2)(x2)
     x2 = layers.BatchNormalization()(x2)
     x2 = layers.ReLU(6)(x2)
 
-    x3 = layers.Conv2D(128, (3, 3), padding='SAME', dilation_rate=3, use_bias=False)(x)
+    #x2 = layers.Conv2D(128, (3, 3), padding='SAME', dilation_rate=2, use_bias=False)(x)
+    #x2 = layers.BatchNormalization()(x2)
+    #x2 = layers.ReLU(6)(x2)
+
+    #
+
+    x3 = layers.DepthwiseConv2D( (3,3), (1,1), padding='SAME', use_bias=False, dilation_rate=3) (x)
+    x3 = layers.Conv2D(128, kernel_size=(1,1), strides=(1,1), use_bias=False, dilation_rate=3)(x3)
     x3 = layers.BatchNormalization()(x3)
     x3 = layers.ReLU(6)(x3)
+
+    #x3 = layers.Conv2D(128, (3, 3), padding='SAME', dilation_rate=3, use_bias=False)(x)
+    #x3 = layers.BatchNormalization()(x3)
+    #x3 = layers.ReLU(6)(x3)
 
     #
 
@@ -158,6 +184,7 @@ def build_model(num_classes,
         model = keras.Model(inputs=img_input, outputs=x, name=model_name)
 
     stn_model = keras.Model(inputs=img_input, outputs=[interpolate_img, transform_mat])
+    
     if weight:
         model.load_weights(weight, by_name=True, skip_mismatch=True)
         trainable=False
