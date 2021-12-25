@@ -11,6 +11,7 @@ from metrics import SequenceAccuracy
 from models import build_model
 import json
 from callbacks.callbacks import ImageCallback
+import time
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--config', type=Path, required=True, help='The config file path.')
@@ -91,7 +92,16 @@ callbacks = [
     tf.keras.callbacks.ReduceLROnPlateau(monitor='val_ctc_logits_loss', factor=0.318, patience=15, min_lr=1e-8, verbose=1),
     tf.keras.callbacks.EarlyStopping(monitor='val_ctc_logits_loss', patience=51),
 ]
+
+start = time.time()
+
 model.fit(train_ds, epochs=config['epochs'], callbacks=callbacks, validation_data=val_ds,\
     use_multiprocessing=False, workers=4)
+
+print("The time used to execute this is given below")
+
+end = time.time()
+
+print(end - start)
 
 model.save('not_h5_model/my_model')

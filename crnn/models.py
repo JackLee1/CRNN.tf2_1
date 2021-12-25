@@ -126,9 +126,13 @@ def build_stn(img, interpolation_size):
     #
 
     x3 = layers.DepthwiseConv2D( (3,3), (1,1), padding='SAME', use_bias=False, dilation_rate=3) (x)
-    x3 = layers.Conv2D(128, kernel_size=(1,1), strides=(1,1), use_bias=False, dilation_rate=3)(x3)
+    x3 = layers.Conv2D(128, kernel_size=(1,1), strides=(1,1), use_bias=False)(x3)
     x3 = layers.BatchNormalization()(x3)
     x3 = layers.ReLU(6)(x3)
+
+    
+    
+
 
     #x3 = layers.Conv2D(128, (3, 3), padding='SAME', dilation_rate=3, use_bias=False)(x)
     #x3 = layers.BatchNormalization()(x3)
