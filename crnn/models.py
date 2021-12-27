@@ -193,33 +193,34 @@ def build_stn(img, interpolation_size):
     #x = layers.BatchNormalization()(x)
     #x = layers.ReLU(6)(x)
 
-    x1 = _inverted_residual_block(x, 128 , (3,3) , t = 6 , strides=1 , n=1) 
-    #x1 = layers.DepthwiseConv2D( (3,3), (1,1), padding='SAME', use_bias=False, dilation_rate=1) (x)
-    #x1 = layers.Conv2D(128, kernel_size=(1,1), strides=(1,1), use_bias=False, dilation_rate=1)(x1)
-    #x1 = layers.BatchNormalization()(x1)
-    #x1 = layers.ReLU(6)(x1)
+    
+    #x1 = _inverted_residual_block(x, 128 , (3,3) , t = 6 , strides=1 , n=1) 
+    x1 = layers.DepthwiseConv2D( (3,3), (1,1), padding='SAME', use_bias=False, dilation_rate=1) (x)
+    x1 = layers.Conv2D(128, kernel_size=(1,1), strides=(1,1), use_bias=False, dilation_rate=1)(x1)
+    x1 = layers.BatchNormalization()(x1)
+    x1 = layers.ReLU(6)(x1)
 
     #x1 = layers.Conv2D(128, (3, 3), padding='SAME', dilation_rate=1, use_bias=False)(x)
     #x1 = layers.BatchNormalization()(x1)
     #x1 = layers.ReLU(6)(x1)
     
     #
-    x2 = _inverted_residual_block(x, 128 , (3,3) , t = 6 , strides=1 , n=1) 
-    #x2 = layers.DepthwiseConv2D( (3,3), (1,1), padding='SAME', use_bias=False, dilation_rate=2) (x)
-    #x2 = layers.Conv2D(128, kernel_size=(1,1), strides=(1,1), use_bias=False, dilation_rate=2)(x2)
-    #x2 = layers.BatchNormalization()(x2)
-    #x2 = layers.ReLU(6)(x2)
+    #x2 = _inverted_residual_block(x, 128 , (3,3) , t = 6 , strides=1 , n=1) 
+    x2 = layers.DepthwiseConv2D( (3,3), (1,1), padding='SAME', use_bias=False, dilation_rate=2) (x)
+    x2 = layers.Conv2D(128, kernel_size=(1,1), strides=(1,1), use_bias=False, dilation_rate=2)(x2)
+    x2 = layers.BatchNormalization()(x2)
+    x2 = layers.ReLU(6)(x2)
 
     #x2 = layers.Conv2D(128, (3, 3), padding='SAME', dilation_rate=2, use_bias=False)(x)
     #x2 = layers.BatchNormalization()(x2)
     #x2 = layers.ReLU(6)(x2)
 
     #
-    x3 = _inverted_residual_block(x, 128 , (3,3) , t = 6 , strides=1 , n=1) 
-    #x3 = layers.DepthwiseConv2D( (3,3), (1,1), padding='SAME', use_bias=False, dilation_rate=3) (x)
-    #x3 = layers.Conv2D(128, kernel_size=(1,1), strides=(1,1), use_bias=False)(x3)
-    #x3 = layers.BatchNormalization()(x3)
-    #x3 = layers.ReLU(6)(x3)
+    #x3 = _inverted_residual_block(x, 128 , (3,3) , t = 6 , strides=1 , n=1) 
+    x3 = layers.DepthwiseConv2D( (3,3), (1,1), padding='SAME', use_bias=False, dilation_rate=3) (x)
+    x3 = layers.Conv2D(128, kernel_size=(1,1), strides=(1,1), use_bias=False)(x3)
+    x3 = layers.BatchNormalization()(x3)
+    x3 = layers.ReLU(6)(x3)
 
     
     
@@ -276,9 +277,9 @@ def build_model(num_classes,
     if require_coords:
         model = keras.Model(inputs=img_input, outputs=[x, transform_mat], name=model_name)
     else:
-        model = keras.Model(inputs=img_input, outputs=x, name=model_name , name= "stn_model")
+        model = keras.Model(inputs=img_input, outputs=x, name=model_name )
 
-    stn_model = keras.Model(inputs=img_input, outputs=[interpolate_img, transform_mat])
+    stn_model = keras.Model(inputs=img_input, outputs=[interpolate_img, transform_mat] , name= "stn_model")
     stn_model.summary()
     
     if weight:
