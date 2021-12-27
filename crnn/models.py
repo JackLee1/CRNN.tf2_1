@@ -4,6 +4,88 @@ from layers.stn import BilinearInterpolation
 from tensorflow import keras
 from tensorflow.keras import layers
 
+relu6 = layers.ReLU(6.)
+
+def _conv_block(inputs, filters, kernel, strides):
+    """Convolution Block
+    This function defines a 2D convolution operation with BN and relu6.
+    # Arguments
+        inputs: Tensor, input tensor of conv layer.
+        filters: Integer, the dimensionality of the output space.
+        kernel: An integer or tuple/list of 2 integers, specifying the
+            width and height of the 2D convolution window.
+        strides: An integer or tuple/list of 2 integers,
+            specifying the strides of the convolution along the width and height.
+            Can be a single integer to specify the same value for
+            all spatial dimensions.
+    # Returns
+        Output tensor.
+    """
+
+    x = layers.Conv2D(filters, kernel, padding='same', strides=strides)(inputs)
+    x = layers.BatchNormalization()(x)
+    return relu6(x)
+
+
+def _bottleneck(inputs, filters, kernel, t, s, r=False):
+    """Bottleneck
+    This function defines a basic bottleneck structure.
+    # Arguments
+        inputs: Tensor, input tensor of conv layer.
+        filters: Integer, the dimensionality of the output space.
+        kernel: An integer or tuple/list of 2 integers, specifying the
+            width and height of the 2D convolution window.
+        t: Integer, expansion factor.
+            t is always applied to the input size.
+        s: An integer or tuple/list of 2 integers,specifying the strides
+            of the convolution along the width and height.Can be a single
+            integer to specify the same value for all spatial dimensions.
+        r: Boolean, Whether to use the residuals.
+    # Returns
+        Output tensor.
+    """
+
+    tchannel = inputs.shape[-1] * t
+
+    x = _conv_block(inputs, tchannel, (1, 1), (1, 1))
+
+    x = layers.DepthwiseConv2D(kernel, strides=(s, s), depth_multiplier=1, padding='same')(x)
+    x = layers.BatchNormalization()(x)
+    x = relu6(x)
+
+    x = layers.Conv2D(filters, (1, 1), strides=(1, 1), padding='same')(x)
+    x = layers.BatchNormalization()(x)
+
+    if r:
+        x = layers.add([x, inputs])
+    return x
+
+def _inverted_residual_block(inputs, filters, kernel, t, strides, n):
+    """Inverted Residual Block
+    This function defines a sequence of 1 or more identical layers.
+    # Arguments
+        inputs: Tensor, input tensor of conv layer.
+        filters: Integer, the dimensionality of the output space.
+        kernel: An integer or tuple/list of 2 integers, specifying the
+            width and height of the 2D convolution window.
+        t: Integer, expansion factor.
+            t is always applied to the input size.
+        s: An integer or tuple/list of 2 integers,specifying the strides
+            of the convolution along the width and height.Can be a single
+            integer to specify the same value for all spatial dimensions.
+        n: Integer, layer repeat times.
+    # Returns
+        Output tensor.
+    """
+
+    x = _bottleneck(inputs, filters, kernel, t, strides)
+
+    for i in range(1, n):
+        x = _bottleneck(x, filters, kernel, t, 1, True)
+
+    return x
+##################################################################################################################################
+
 def separable_conv(x, p_filters, d_kernel_size=(3,3), d_strides=(1,1), d_padding='valid'):
     x = layers.DepthwiseConv2D(kernel_size=d_kernel_size, strides=d_strides, padding=d_padding, use_bias=True)(x)
     # x = layers.BatchNormalization()(x)
@@ -75,17 +157,22 @@ def build_stn(img, interpolation_size):
     #x = layers.BatchNormalization()(x)
     #x = layers.ReLU(6)(x)    
 
-    x = layers.Conv2D(32, (5, 5), padding='SAME', use_bias=False)(img) # 20
-    x = layers.BatchNormalization()(x)
-    x = layers.ReLU(6)(x)
+    x = _conv_block(img ,32 , (5,5) , strides=(1,1))
     x = layers.MaxPool2D(pool_size=(2, 2))(x)
+    #
+    #x = layers.Conv2D(32, (5, 5), padding='SAME', use_bias=False)(img) # 20
+    #x = layers.BatchNormalization()(x)
+    #x = layers.ReLU(6)(x)
+    #x = layers.MaxPool2D(pool_size=(2, 2))(x)
     
-    #DepthwiseConv2D(kernel_size=d_kernel_size, strides=d_strides, padding=d_padding, use_bias=True)(x)
-    x = layers.DepthwiseConv2D( (5,5), (1,1), padding='SAME', use_bias=False) (x)
-    x = layers.Conv2D(64, kernel_size=(1,1), strides=(1,1), use_bias=False)(x)
-    x = layers.BatchNormalization()(x)
-    x = layers.ReLU(6)(x)
+    x = _inverted_residual_block(x, 64 , (5,5) , t = 1 , strides=1 , n=1) 
     x = layers.MaxPool2D(pool_size=(2, 2))(x)
+    #//DepthwiseConv2D(kernel_size=d_kernel_size, strides=d_strides, padding=d_padding, use_bias=True)(x)
+    #x = layers.DepthwiseConv2D( (5,5), (1,1), padding='SAME', use_bias=False) (x)
+    #x = layers.Conv2D(64, kernel_size=(1,1), strides=(1,1), use_bias=False)(x)
+    #x = layers.BatchNormalization()(x)
+    #x = layers.ReLU(6)(x)
+    #x = layers.MaxPool2D(pool_size=(2, 2))(x)
     #
     
     #x = layers.Conv2D(64, (5, 5), padding='SAME', use_bias=False)(x)    #20
@@ -95,40 +182,43 @@ def build_stn(img, interpolation_size):
     
     #
 
-    x = layers.DepthwiseConv2D( (3,3),(1,1), padding='SAME', use_bias=False) (x)
-    x = layers.Conv2D(128, kernel_size=(1,1), strides=(1,1), use_bias=False)(x)
-    x = layers.BatchNormalization()(x)
-    x = layers.ReLU(6)(x)
+    x = _inverted_residual_block(x, 128 , (3,3) , t = 6 , strides=2 , n=2) 
+    #x = layers.DepthwiseConv2D( (3,3),(1,1), padding='SAME', use_bias=False) (x)
+    #x = layers.Conv2D(128, kernel_size=(1,1), strides=(1,1), use_bias=False)(x)
+    #x = layers.BatchNormalization()(x)
+    #x = layers.ReLU(6)(x)
 
     #x = layers.Conv2D(128, (3, 3), padding='SAME', use_bias=False)(x)
     #x = layers.BatchNormalization()(x)
     #x = layers.ReLU(6)(x)
 
-    x1 = layers.DepthwiseConv2D( (3,3), (1,1), padding='SAME', use_bias=False, dilation_rate=1) (x)
-    x1 = layers.Conv2D(128, kernel_size=(1,1), strides=(1,1), use_bias=False, dilation_rate=1)(x1)
-    x1 = layers.BatchNormalization()(x1)
-    x1 = layers.ReLU(6)(x1)
+    x1 = _inverted_residual_block(x, 128 , (3,3) , t = 6 , strides=1 , n=1) 
+    #x1 = layers.DepthwiseConv2D( (3,3), (1,1), padding='SAME', use_bias=False, dilation_rate=1) (x)
+    #x1 = layers.Conv2D(128, kernel_size=(1,1), strides=(1,1), use_bias=False, dilation_rate=1)(x1)
+    #x1 = layers.BatchNormalization()(x1)
+    #x1 = layers.ReLU(6)(x1)
 
     #x1 = layers.Conv2D(128, (3, 3), padding='SAME', dilation_rate=1, use_bias=False)(x)
     #x1 = layers.BatchNormalization()(x1)
     #x1 = layers.ReLU(6)(x1)
     
     #
-    x2 = layers.DepthwiseConv2D( (3,3), (1,1), padding='SAME', use_bias=False, dilation_rate=2) (x)
-    x2 = layers.Conv2D(128, kernel_size=(1,1), strides=(1,1), use_bias=False, dilation_rate=2)(x2)
-    x2 = layers.BatchNormalization()(x2)
-    x2 = layers.ReLU(6)(x2)
+    x2 = _inverted_residual_block(x, 128 , (3,3) , t = 6 , strides=1 , n=1) 
+    #x2 = layers.DepthwiseConv2D( (3,3), (1,1), padding='SAME', use_bias=False, dilation_rate=2) (x)
+    #x2 = layers.Conv2D(128, kernel_size=(1,1), strides=(1,1), use_bias=False, dilation_rate=2)(x2)
+    #x2 = layers.BatchNormalization()(x2)
+    #x2 = layers.ReLU(6)(x2)
 
     #x2 = layers.Conv2D(128, (3, 3), padding='SAME', dilation_rate=2, use_bias=False)(x)
     #x2 = layers.BatchNormalization()(x2)
     #x2 = layers.ReLU(6)(x2)
 
     #
-
-    x3 = layers.DepthwiseConv2D( (3,3), (1,1), padding='SAME', use_bias=False, dilation_rate=3) (x)
-    x3 = layers.Conv2D(128, kernel_size=(1,1), strides=(1,1), use_bias=False)(x3)
-    x3 = layers.BatchNormalization()(x3)
-    x3 = layers.ReLU(6)(x3)
+    x3 = _inverted_residual_block(x, 128 , (3,3) , t = 6 , strides=1 , n=1) 
+    #x3 = layers.DepthwiseConv2D( (3,3), (1,1), padding='SAME', use_bias=False, dilation_rate=3) (x)
+    #x3 = layers.Conv2D(128, kernel_size=(1,1), strides=(1,1), use_bias=False)(x3)
+    #x3 = layers.BatchNormalization()(x3)
+    #x3 = layers.ReLU(6)(x3)
 
     
     
@@ -188,6 +278,7 @@ def build_model(num_classes,
         model = keras.Model(inputs=img_input, outputs=x, name=model_name)
 
     stn_model = keras.Model(inputs=img_input, outputs=[interpolate_img, transform_mat])
+    stn_model.summary()
     
     if weight:
         model.load_weights(weight, by_name=True, skip_mismatch=True)
