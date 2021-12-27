@@ -275,7 +275,7 @@ def build_model(num_classes,
     if require_coords:
         model = keras.Model(inputs=img_input, outputs=[x, transform_mat], name=model_name)
     else:
-        model = keras.Model(inputs=img_input, outputs=x, name=model_name)
+        model = keras.Model(inputs=img_input, outputs=x, name=model_name , name= "stn_model")
 
     stn_model = keras.Model(inputs=img_input, outputs=[interpolate_img, transform_mat])
     stn_model.summary()
