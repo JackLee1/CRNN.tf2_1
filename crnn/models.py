@@ -24,7 +24,8 @@ def _conv_block(inputs, filters, kernel, strides):
 
     x = layers.Conv2D(filters, kernel, padding='same', strides=strides)(inputs)
     x = layers.BatchNormalization()(x)
-    return relu6(x)
+    x = relu6(x)
+    return x
 
 
 def _bottleneck(inputs, filters, kernel, t, s, r=False):
